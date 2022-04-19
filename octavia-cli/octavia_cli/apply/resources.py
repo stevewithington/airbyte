@@ -202,7 +202,11 @@ class BaseResource(abc.ABC):
         self._get_fn = getattr(self.api, self.get_function_name)
 
         self.configuration_path = configuration_path
-        self.configuration_hash = hash_config(raw_configuration)
+        self.configuration_hash = hash_config(
+            raw_configuration
+        )  # Hash as early as possible to limit risk of raw_configuration downstream mutations.
+        self.local_file_changed = True if self.state is None else self.configuration_hash != self.state.configuration_hash
+
         self.raw_configuration = raw_configuration
         self.configuration = (
             self.ConfigurationSerializer(raw_configuration["configuration"])
@@ -214,8 +218,6 @@ class BaseResource(abc.ABC):
         self.api_instance = self.api(api_client)
         self.workspace_id = workspace_id
         self.resource_name = raw_configuration["resource_name"]
-
-        self.local_file_changed = True if self.state is None else self.configuration_hash != self.state.configuration_hash
 
     @property
     def remote_resource(self):
